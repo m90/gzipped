@@ -3,6 +3,7 @@ package gzipped
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -55,6 +56,9 @@ func humanize(size uint64) string {
 // Compare gzips the contents of the passed buffer and returns information
 // about the sizes of the original and the compressed version
 func Compare(inBuf *bytes.Buffer) (*Comparison, error) {
+	if inBuf == nil || inBuf.Len() == 0 {
+		return nil, errors.New("unable to use empty or nil buffer")
+	}
 	var outBuf bytes.Buffer
 	gzipped := gzip.NewWriter(&outBuf)
 
