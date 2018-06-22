@@ -8,14 +8,17 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/m90/gzipped"
 )
 
 func main() {
 	var (
-		file      = flag.String("file", "", "file to be gzipped")
-		showBytes = flag.Bool("bytes", false, "display sizes in bytes")
+		file        = flag.String("file", "", "location of file to be gzipped")
+		showBytes   = flag.Bool("bytes", false, "display sizes in raw bytes instead of humanized formats")
+		readTimeout = flag.Duration("timeout", time.Second*2, "deadline for stdin to supply data")
 	)
 	flag.Parse()
 
@@ -29,9 +32,24 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
+		deadline := time.NewTimer(*readTimeout).C
+		cancelDeadline := &sync.Once{}
+		startedReading := make(chan bool)
+
+		go func() {
+			select {
+			case <-deadline:
+				fmt.Printf("Received no input on stdin for %v, did you mean to pass -file instead?\n", *readTimeout)
+				os.Exit(1)
+			case <-startedReading:
+				return
+			}
+		}()
+
 		reader := bufio.NewReader(os.Stdin)
 		for {
 			chunk, err := reader.ReadByte()
+			cancelDeadline.Do(func() { startedReading <- true })
 			if err == io.EOF {
 				break
 			} else if err != nil {

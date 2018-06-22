@@ -35,9 +35,11 @@ The following options are available:
 ```
 Usage of gzipped:
   -bytes
-    	display sizes in bytes
+    	display sizes in raw bytes instead of humanized formats
   -file string
-    	file to be gzipped
+    	location of file to be gzipped
+  -timeout duration
+    	deadline for stdin to supply data (default 2s)
 ```
 
 Refer to the [godoc](http://godoc.org/github.com/m90/gzipped) for information about how to use it as a library.
