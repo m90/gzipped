@@ -11,26 +11,44 @@ import (
 	"os"
 )
 
+type Result struct {
+	InBytes  uint64
+	OutBytes uint64
+}
+
+func compare(inBuf *bytes.Buffer) (*Result, error) {
+	var outBuf bytes.Buffer
+	gzipped := gzip.NewWriter(&outBuf)
+	gzipped.Write(inBuf.Bytes())
+
+	if err := gzipped.Flush(); err != nil {
+		return nil, err
+	}
+	if err := gzipped.Close(); err != nil {
+		return nil, err
+	}
+
+	return &Result{
+		InBytes:  uint64(len(inBuf.Bytes())),
+		OutBytes: uint64(len(outBuf.Bytes())),
+	}, nil
+}
+
 func main() {
 	file := flag.String("file", "", "file to read")
 	flag.Parse()
 
-	var reader *bufio.Reader
-	var bytesRead int
-	var buf bytes.Buffer
-
-	gzipped := gzip.NewWriter(&buf)
+	var b []byte
 
 	if location := *file; location != "" {
-		b, err := ioutil.ReadFile(*file)
-		if err != nil {
-			fmt.Printf("Error reading file %v\n", err)
+		var readErr error
+		b, readErr = ioutil.ReadFile(*file)
+		if readErr != nil {
+			fmt.Printf("Error reading file: %v\n", readErr)
 			os.Exit(1)
 		}
-		bytesRead = len(b)
-		gzipped.Write(b)
 	} else {
-		reader = bufio.NewReader(os.Stdin)
+		reader := bufio.NewReader(os.Stdin)
 		for {
 			chunk, err := reader.ReadByte()
 			if err == io.EOF {
@@ -39,19 +57,15 @@ func main() {
 				fmt.Printf("Error reading from stdin: %v\n", err)
 				os.Exit(1)
 			}
-			gzipped.Write([]byte{chunk})
-			bytesRead++
+			b = append(b, chunk)
 		}
 	}
 
-	if err := gzipped.Flush(); err != nil {
-		fmt.Printf("Error flushing reader %v\n", err)
-		os.Exit(1)
-	}
-	if err := gzipped.Close(); err != nil {
-		fmt.Printf("Error closing reader %v\n", err)
+	result, err := compare(bytes.NewBuffer(b))
+	if err != nil {
+		fmt.Printf("Error compressing data: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Got %d bytes, compressed to %d bytes \n", bytesRead, len(buf.Bytes()))
+	fmt.Printf("Got %d bytes, compressed to %d bytes \n", result.InBytes, result.OutBytes)
 }
