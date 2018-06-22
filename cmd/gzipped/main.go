@@ -3,39 +3,20 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"compress/gzip"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/m90/gzipped"
 )
 
-type Result struct {
-	InBytes  uint64
-	OutBytes uint64
-}
-
-func compare(inBuf *bytes.Buffer) (*Result, error) {
-	var outBuf bytes.Buffer
-	gzipped := gzip.NewWriter(&outBuf)
-	gzipped.Write(inBuf.Bytes())
-
-	if err := gzipped.Flush(); err != nil {
-		return nil, err
-	}
-	if err := gzipped.Close(); err != nil {
-		return nil, err
-	}
-
-	return &Result{
-		InBytes:  uint64(len(inBuf.Bytes())),
-		OutBytes: uint64(len(outBuf.Bytes())),
-	}, nil
-}
-
 func main() {
-	file := flag.String("file", "", "file to read")
+	var (
+		file      = flag.String("file", "", "file to be gzipped")
+		showBytes = flag.Bool("bytes", false, "display sizes in bytes")
+	)
 	flag.Parse()
 
 	var b []byte
@@ -61,11 +42,15 @@ func main() {
 		}
 	}
 
-	result, err := compare(bytes.NewBuffer(b))
+	result, err := gzipped.Compare(bytes.NewBuffer(b))
 	if err != nil {
 		fmt.Printf("Error compressing data: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Printf("Got %d bytes, compressed to %d bytes \n", result.InBytes, result.OutBytes)
+	if *showBytes {
+		fmt.Printf("Original is %d Bytes, compressed is %d Bytes, ratio is %.1f%%\n", result.InBytes, result.OutBytes, result.Ratio)
+	} else {
+		fmt.Printf("Original is %s, compressed is %s, ratio is %.1f%%\n", result.In, result.Out, result.Ratio)
+	}
 }
