@@ -16,17 +16,18 @@ import (
 
 func main() {
 	var (
-		file        = flag.String("file", "", "location of file to be gzipped")
 		showBytes   = flag.Bool("bytes", false, "display sizes in raw bytes instead of humanized formats")
 		readTimeout = flag.Duration("timeout", time.Second*2, "deadline for stdin to supply data")
 	)
 	flag.Parse()
 
+	fileArg := flag.Arg(0)
+
 	var b []byte
 
-	if location := *file; location != "" {
+	if fileArg != "" {
 		var readErr error
-		b, readErr = ioutil.ReadFile(*file)
+		b, readErr = ioutil.ReadFile(fileArg)
 		if readErr != nil {
 			fmt.Printf("Error reading file: %v\n", readErr)
 			os.Exit(1)
@@ -39,7 +40,7 @@ func main() {
 		go func() {
 			select {
 			case <-deadline:
-				fmt.Printf("Received no input on stdin for %v, did you mean to pass -file instead?\n", *readTimeout)
+				fmt.Printf("Received no input on stdin for %v, did you forget to pass a file?\n", *readTimeout)
 				os.Exit(1)
 			case <-startedReading:
 				return

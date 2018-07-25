@@ -20,9 +20,9 @@ go get github.com/m90/gzipped
 
 ## Command usage
 
-Use `-file` to pass the location of a file:
+Pass the location of a file:
 ```sh
-gzipped -file ./styles.css
+gzipped ./styles.css
 ```
 
 or use pipes:
@@ -36,8 +36,6 @@ The following options are available:
 Usage of gzipped:
   -bytes
     	display sizes in raw bytes instead of humanized formats
-  -file string
-    	location of file to be gzipped
   -timeout duration
     	deadline for stdin to supply data (default 2s)
 ```
